@@ -1,0 +1,38 @@
+{
+  "name": "@yuhua99/pi-usage",
+  "version": "1.0.0",
+  "description": "Pi extension adding a /usage command. Subscription rate-limit windows and Codex banked reset credits for Claude, Codex, and xAI",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "fmt": "oxfmt",
+    "lint": "oxlint",
+    "typecheck": "oxlint --type-aware --type-check"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.83.0",
+    "@earendil-works/pi-tui": "0.83.0",
+    "@types/node": "^25.2.3",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.69.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
