@@ -3,6 +3,7 @@ import { Box, Text, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tu
 import { anthropic } from "./anthropic.js";
 import { codex } from "./codex.js";
 import { PROVIDERS, type UsageSnapshot } from "./types.js";
+import { clampPercent } from "./util.js";
 import { xai } from "./xai.js";
 
 const providers = { anthropic, codex, xai };
@@ -20,7 +21,7 @@ function usageColor(usedPercent: number): "success" | "warning" | "error" {
 }
 
 function renderCircles(percent: number): string {
-  const clamped = Math.max(0, Math.min(100, percent));
+  const clamped = clampPercent(percent);
   const filled = clamped / 20;
   const fullCircles = Math.floor(filled);
   const remainder = filled - fullCircles;

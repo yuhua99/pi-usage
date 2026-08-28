@@ -89,6 +89,7 @@ export const anthropic: UsageProvider = {
       const data = (await res.json()) as {
         five_hour?: { utilization?: number; resets_at?: string };
         seven_day?: { utilization?: number; resets_at?: string };
+        limits?: unknown;
         extra_usage?: {
           is_enabled?: boolean;
           used_credits?: number;
@@ -114,6 +115,33 @@ export const anthropic: UsageProvider = {
         windows.push({
           label: "Week",
           usedPercent: toPercent(data.seven_day.utilization),
+          resetDescription: resetAt ? formatReset(resetAt) : undefined,
+          resetAt: resetAt?.toISOString(),
+        });
+      }
+
+      const fableLimit = Array.isArray(data.limits)
+        ? data.limits.find((limit): limit is { percent: number; resets_at?: unknown } => {
+            if (!limit || typeof limit !== "object") return false;
+            const entry = limit as {
+              kind?: unknown;
+              percent?: unknown;
+              scope?: { model?: { display_name?: unknown } | null } | null;
+            };
+            return (
+              entry.kind === "weekly_scoped" &&
+              entry.scope?.model?.display_name === "Fable" &&
+              typeof entry.percent === "number" &&
+              Number.isFinite(entry.percent)
+            );
+          })
+        : undefined;
+      if (fableLimit) {
+        const resetAt =
+          typeof fableLimit.resets_at === "string" ? parseDate(fableLimit.resets_at) : undefined;
+        windows.push({
+          label: "WeekF",
+          usedPercent: clampPercent(fableLimit.percent),
           resetDescription: resetAt ? formatReset(resetAt) : undefined,
           resetAt: resetAt?.toISOString(),
         });

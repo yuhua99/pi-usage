@@ -13,6 +13,14 @@ import type { RateWindow, UsageProvider, UsageSnapshot } from "./types.js";
 
 const BILLING_BASE = "https://cli-chat-proxy.grok.com/v1/billing";
 
+interface BillingConfig {
+  monthlyLimit?: { val?: number };
+  used?: { val?: number };
+  billingPeriodEnd?: string;
+  currentPeriod?: { type?: string; end?: string };
+  creditUsagePercent?: number;
+}
+
 function loadToken(): string | undefined {
   const auth = readAuth();
   const xai = auth.xai;
@@ -41,7 +49,7 @@ async function fetchJson(
 ): Promise<{
   ok: boolean;
   status?: number;
-  data?: { config?: Parameters<typeof parseMonthly>[0] & Parameters<typeof parseWeekly>[0] };
+  data?: { config?: BillingConfig };
   error?: string;
 }> {
   const { controller, clear } = createTimeoutController(API_TIMEOUT_MS);
@@ -54,9 +62,7 @@ async function fetchJson(
     return {
       ok: true,
       status: res.status,
-      data: (await res.json()) as {
-        config?: Parameters<typeof parseMonthly>[0] & Parameters<typeof parseWeekly>[0];
-      },
+      data: (await res.json()) as { config?: BillingConfig },
     };
   } catch (error) {
     clear();
@@ -64,11 +70,7 @@ async function fetchJson(
   }
 }
 
-function parseMonthly(config: {
-  monthlyLimit?: { val?: number };
-  used?: { val?: number };
-  billingPeriodEnd?: string;
-}): RateWindow | undefined {
+function parseMonthly(config: BillingConfig): RateWindow | undefined {
   const limit = config.monthlyLimit?.val;
   const used = config.used?.val;
   if (typeof limit !== "number" || limit <= 0 || typeof used !== "number" || used < 0)
@@ -82,11 +84,7 @@ function parseMonthly(config: {
   };
 }
 
-function parseWeekly(config: {
-  currentPeriod?: { type?: string; start?: string; end?: string };
-  creditUsagePercent?: number;
-  billingPeriodEnd?: string;
-}): RateWindow | undefined {
+function parseWeekly(config: BillingConfig): RateWindow | undefined {
   if (config.currentPeriod?.type !== "USAGE_PERIOD_TYPE_WEEKLY") return undefined;
   const end =
     (typeof config.billingPeriodEnd === "string" && config.billingPeriodEnd) ||
