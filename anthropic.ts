@@ -48,11 +48,6 @@ function formatExtraUsageCredits(credits: number): string {
   return (credits / 100).toFixed(2);
 }
 
-function toPercent(value: number): number {
-  if (!Number.isFinite(value) || value < 0) return 0;
-  return clampPercent(value <= 1 ? value * 100 : value);
-}
-
 export const anthropic: UsageProvider = {
   name: "anthropic",
   displayName: "Claude",
@@ -104,7 +99,7 @@ export const anthropic: UsageProvider = {
         const resetAt = parseDate(data.five_hour.resets_at);
         windows.push({
           label: "5h",
-          usedPercent: toPercent(data.five_hour.utilization),
+          usedPercent: clampPercent(data.five_hour.utilization),
           resetDescription: resetAt ? formatReset(resetAt) : undefined,
           resetAt: resetAt?.toISOString(),
         });
@@ -114,7 +109,7 @@ export const anthropic: UsageProvider = {
         const resetAt = parseDate(data.seven_day.resets_at);
         windows.push({
           label: "Week",
-          usedPercent: toPercent(data.seven_day.utilization),
+          usedPercent: clampPercent(data.seven_day.utilization),
           resetDescription: resetAt ? formatReset(resetAt) : undefined,
           resetAt: resetAt?.toISOString(),
         });
@@ -158,7 +153,7 @@ export const anthropic: UsageProvider = {
             : `Extra [${extraStatus}] ${formatExtraUsageCredits(usedCredits)}`;
         windows.push({
           label,
-          usedPercent: toPercent(extra.utilization || 0),
+          usedPercent: clampPercent(extra.utilization || 0),
           resetDescription: extraStatus === "active" ? "active" : undefined,
         });
       }
