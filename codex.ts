@@ -3,6 +3,7 @@ import {
   clampPercent,
   createTimeoutController,
   errorMessage,
+  formatExpiry,
   formatReset,
   home,
   parseDate,
@@ -55,13 +56,6 @@ function toWindow(
     resetDescription: resetDate ? formatReset(resetDate) : undefined,
     resetAt: resetDate?.toISOString(),
   };
-}
-
-function formatExpiry(date: Date): string {
-  if (date.getTime() - Date.now() > 7 * 86400000) {
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-  }
-  return formatReset(date);
 }
 
 async function fetchResets(

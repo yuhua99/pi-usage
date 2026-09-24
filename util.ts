@@ -38,6 +38,13 @@ export function formatReset(date: Date): string {
   return remHours > 0 ? `${days}d${remHours}h` : `${days}d`;
 }
 
+export function formatExpiry(date: Date): string {
+  if (date.getTime() - Date.now() > 7 * 86400000) {
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  }
+  return formatReset(date);
+}
+
 export function createTimeoutController(timeoutMs: number): {
   controller: AbortController;
   clear: () => void;

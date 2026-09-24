@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process";
 import {
   API_TIMEOUT_MS,
   clampPercent,
   createTimeoutController,
   errorMessage,
+  formatExpiry,
   formatReset,
   home,
   keychainPassword,
@@ -44,6 +46,26 @@ function loadToken(): string | undefined {
   return undefined;
 }
 
+// Reset grants (cedar_ember) are only returned for a recent Claude Code CLI user agent.
+const FALLBACK_CLAUDE_VERSION = "2.1.281";
+
+function claudeVersion(): string {
+  try {
+    const output = execFileSync("claude", ["--version"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 2000,
+    });
+    return output.match(/^\d+\.\d+\.\d+/)?.[0] ?? FALLBACK_CLAUDE_VERSION;
+  } catch {
+    return FALLBACK_CLAUDE_VERSION;
+  }
+}
+
+function claudeUserAgent(): string {
+  return `claude-cli/${claudeVersion()} (external, ${process.env.CLAUDE_CODE_ENTRYPOINT ?? "cli"})`;
+}
+
 function formatExtraUsageCredits(credits: number): string {
   return (credits / 100).toFixed(2);
 }
@@ -63,10 +85,11 @@ export const anthropic: UsageProvider = {
 
     const { controller, clear } = createTimeoutController(API_TIMEOUT_MS);
     try {
-      const res = await fetch("https://api.anthropic.com/api/oauth/usage", {
+      const res = await fetch("https://api.anthropic.com/api/oauth/usage?cedar_ember=1", {
         headers: {
           Authorization: `Bearer ${token}`,
           "anthropic-beta": "oauth-2025-04-20",
+          "User-Agent": claudeUserAgent(),
         },
         signal: controller.signal,
       });
@@ -91,6 +114,9 @@ export const anthropic: UsageProvider = {
           monthly_limit?: number;
           utilization?: number;
         };
+        cedar_ember?: {
+          grants?: { resets_left?: number; ends_at?: string | null }[];
+        } | null;
       };
 
       const windows: RateWindow[] = [];
@@ -158,7 +184,19 @@ export const anthropic: UsageProvider = {
         });
       }
 
-      return { provider: "anthropic", displayName: "Claude", windows };
+      const grants = (data.cedar_ember?.grants ?? []).filter(
+        (grant) => (grant.resets_left ?? 0) > 0,
+      );
+      const count = grants.reduce((sum, grant) => sum + (grant.resets_left ?? 0), 0);
+      const expirations = grants
+        .map((grant) => parseDate(grant.ends_at ?? undefined))
+        .filter((date): date is Date => Boolean(date))
+        .sort((a, b) => a.getTime() - b.getTime())
+        .slice(0, 3)
+        .map(formatExpiry);
+      const resets = count > 0 ? { count, expirations } : undefined;
+
+      return { provider: "anthropic", displayName: "Claude", windows, resets };
     } catch (error) {
       clear();
       return {
