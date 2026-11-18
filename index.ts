@@ -1,14 +1,27 @@
-import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import { Box, Text, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { anthropic } from "./anthropic.js";
 import { codex } from "./codex.js";
-import { PROVIDERS, type UsageSnapshot } from "./types.js";
-import { clampPercent } from "./util.js";
+import { PROVIDERS, type ProviderName, type UsageSnapshot } from "./types.js";
+import { clampPercent, readAuth } from "./util.js";
 import { xai } from "./xai.js";
 
 const providers = { anthropic, codex, xai };
+// Provider ids in pi's ~/.pi/agent/auth.json.
+const PI_AUTH_IDS: Record<ProviderName, string> = {
+  anthropic: "anthropic",
+  codex: "openai-codex",
+  xai: "xai",
+};
 const ENTRY_TYPE = "usage";
 const CIRCLES = ["○", "◔", "◑", "◕", "●"];
+
+// Resolving auth makes pi refresh a nearly expired OAuth token in auth.json.
+// Best effort: after a failed refresh, fetchUsage still tries the stored token.
+async function refreshPiOAuth(ctx: ExtensionContext, id: string): Promise<void> {
+  if ((readAuth()[id] as { type?: unknown } | undefined)?.type !== "oauth") return;
+  await ctx.modelRegistry.getProviderAuth(id).catch(() => {});
+}
 
 function formatPercent(value: number): string {
   return `${Math.round(value)}%`.padStart(4);
@@ -157,6 +170,7 @@ export default function (pi: ExtensionAPI) {
         const snapshots = await Promise.all(
           loggedIn.map(async (provider) => {
             try {
+              await refreshPiOAuth(ctx, PI_AUTH_IDS[provider.name]);
               return await provider.fetchUsage();
             } catch (error) {
               return {

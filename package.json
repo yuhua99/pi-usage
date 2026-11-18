@@ -10,8 +10,8 @@
     "typecheck": "oxlint --type-aware --type-check"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "0.83.0",
-    "@earendil-works/pi-tui": "0.83.0",
+    "@earendil-works/pi-coding-agent": "1.5.2",
+    "@earendil-works/pi-tui": "1.5.2",
     "@types/node": "^25.2.3",
     "oxfmt": "^0.63.0",
     "oxlint": "^1.69.0",
@@ -19,8 +19,8 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*",
-    "@earendil-works/pi-tui": "*"
+    "@earendil-works/pi-coding-agent": ">=1.5.2",
+    "@earendil-works/pi-tui": ">=1.5.2"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {
